@@ -81,18 +81,11 @@ impl MultiKeyLock {
         cancel: CancellationToken,
     ) -> Option<KeyLock> {
         let key: String = key.into();
-        let token_id = GLOBAL_COUNTER.fetch_add(1, Ordering::SeqCst);
-
         let mut retry = self.retry;
 
         loop {
-            let loaded = self.locks.entry(key.clone()).or_insert(token_id);
-            if *loaded == token_id {
-                return Some(KeyLock {
-                    map: self.locks.clone(),
-                    key,
-                    token_id,
-                });
+            if let Some(key_lock) = self._try_lock_internal(&key) {
+                return Some(key_lock);
             }
 
             select! {
@@ -107,6 +100,10 @@ impl MultiKeyLock {
     }
 
     pub fn try_lock_now<K: Into<String>>(&self, key: K) -> Option<KeyLock> {
+        self._try_lock_internal(key)
+    }
+
+    fn _try_lock_internal<K: Into<String>>(&self, key: K) -> Option<KeyLock> {
         let key: String = key.into();
         let token_id = GLOBAL_COUNTER.fetch_add(1, Ordering::SeqCst);
 
