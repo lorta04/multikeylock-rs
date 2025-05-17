@@ -61,16 +61,16 @@ impl MultiKeyLock {
         timeout: Duration,
     ) -> Option<KeyLock> {
         let cancel = CancellationToken::new();
-
-        spawn({
-            let cancel = cancel.clone();
-            async move {
-                sleep(timeout).await;
-                cancel.cancel();
-            }
+        let cancel_clone = cancel.clone();
+        let handle = tokio::spawn(async move {
+            sleep(timeout).await;
+            cancel_clone.cancel();
         });
 
-        self.lock_with_token(key, cancel).await
+        let result = self.lock_with_token(key, cancel).await;
+        handle.abort();
+
+        result
     }
 
     pub async fn lock_with_token<K: Into<String>>(
