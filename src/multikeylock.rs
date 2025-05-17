@@ -105,6 +105,22 @@ impl MultiKeyLock {
             }
         }
     }
+
+    pub fn try_lock_now<K: Into<String>>(&self, key: K) -> Option<KeyLock> {
+        let key: String = key.into();
+        let token_id = GLOBAL_COUNTER.fetch_add(1, Ordering::SeqCst);
+
+        let loaded = self.locks.entry(key.clone()).or_insert(token_id);
+        if *loaded == token_id {
+            return Some(KeyLock {
+                map: self.locks.clone(),
+                key,
+                token_id,
+            });
+        }
+
+        None
+    }
 }
 
 #[derive(Debug)]
