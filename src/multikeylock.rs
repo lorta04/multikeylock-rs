@@ -4,6 +4,7 @@ use std::{sync::Arc, time::Duration};
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
 const DEFAULT_RETRY: Duration = Duration::from_millis(10);
 
+#[derive(Debug)]
 pub struct Config {
     pub map: DashMap<String, u64>,
     pub timeout: Option<Duration>,
@@ -20,6 +21,7 @@ impl Default for Config {
     }
 }
 
+#[derive(Debug)]
 pub struct MultiKeyLock {
     locks: Arc<DashMap<String, u64>>,
     pub timeout: Duration,
