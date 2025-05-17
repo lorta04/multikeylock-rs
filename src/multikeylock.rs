@@ -6,7 +6,7 @@ use std::{
     },
     time::Duration,
 };
-use tokio::time::sleep;
+use tokio::{select, spawn, time::sleep};
 use tokio_util::sync::CancellationToken;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -51,17 +51,21 @@ impl MultiKeyLock {
         }
     }
 
-    pub async fn lock<K: Into<String>>(&self, key: K) -> bool {
+    pub async fn lock<K: Into<String>>(&self, key: K) -> Option<KeyLock> {
         self.lock_with_timeout(key, self.timeout).await
     }
 
-    pub async fn lock_with_timeout<K: Into<String>>(&self, key: K, timeout: Duration) -> bool {
+    pub async fn lock_with_timeout<K: Into<String>>(
+        &self,
+        key: K,
+        timeout: Duration,
+    ) -> Option<KeyLock> {
         let cancel = CancellationToken::new();
 
-        tokio::spawn({
+        spawn({
             let cancel = cancel.clone();
             async move {
-                tokio::time::sleep(timeout).await;
+                sleep(timeout).await;
                 cancel.cancel();
             }
         });
@@ -73,20 +77,37 @@ impl MultiKeyLock {
         &self,
         key: K,
         cancel: CancellationToken,
-    ) -> bool {
+    ) -> Option<KeyLock> {
         let key: String = key.into();
         let token_id = GLOBAL_COUNTER.fetch_add(1, Ordering::SeqCst);
 
         loop {
             let loaded = self.locks.entry(key.clone()).or_insert(token_id);
             if *loaded == token_id {
-                return true;
+                return Some(KeyLock {
+                    map: self.locks.clone(),
+                    key,
+                    token_id,
+                });
             }
 
-            tokio::select! {
-                _ = cancel.cancelled() => return false,
+            select! {
+                _ = cancel.cancelled() => return None,
                 _ = sleep(self.retry) => {}
             }
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct KeyLock {
+    map: Arc<DashMap<String, u64>>,
+    pub key: String,
+    token_id: u64,
+}
+
+impl Drop for KeyLock {
+    fn drop(&mut self) {
+        self.map.remove_if(&self.key, |_, v| *v == self.token_id);
     }
 }
