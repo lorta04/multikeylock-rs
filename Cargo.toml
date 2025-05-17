@@ -8,5 +8,5 @@ repository = "https://github.com/lorta04/multikeylock-rs"
 
 [dependencies]
 dashmap = "6.1"
-tokio = { version = "1.45", features = ["full"] }
+tokio = { version = "1.45", features = ["time", "macros", "rt"] }
 tokio-util = "0.7.15"
