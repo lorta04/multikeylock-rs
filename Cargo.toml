@@ -1,0 +1,11 @@
+[package]
+name = "multikeylock"
+version = "0.1.0"
+edition = "2021"
+description = "A simple multi-key mutex library using DashMap in Rust"
+license = "MIT"
+repository = "https://github.com/lorta04/multikeylock-rs"
+
+[dependencies]
+dashmap = "6.1"
+tokio = { version = "1.38", features = ["rt", "macros", "sync", "time"] }
