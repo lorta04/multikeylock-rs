@@ -1,16 +1,18 @@
 use dashmap::DashMap;
 use std::{
+    cmp::min,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
     },
     time::Duration,
 };
-use tokio::{select, spawn, time::sleep};
+use tokio::{select, time::sleep};
 use tokio_util::sync::CancellationToken;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
 const DEFAULT_RETRY: Duration = Duration::from_millis(10);
+const MAX_BACKOFF: Duration = Duration::from_secs(1);
 
 static GLOBAL_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -81,6 +83,8 @@ impl MultiKeyLock {
         let key: String = key.into();
         let token_id = GLOBAL_COUNTER.fetch_add(1, Ordering::SeqCst);
 
+        let mut retry = self.retry;
+
         loop {
             let loaded = self.locks.entry(key.clone()).or_insert(token_id);
             if *loaded == token_id {
@@ -92,8 +96,12 @@ impl MultiKeyLock {
             }
 
             select! {
-                _ = cancel.cancelled() => return None,
-                _ = sleep(self.retry) => {}
+                _ = cancel.cancelled() => {
+                    return None;
+                },
+                _ = sleep(retry) => {
+                    retry = min(retry * 2, MAX_BACKOFF);
+                },
             }
         }
     }
