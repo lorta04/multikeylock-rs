@@ -33,7 +33,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MultiKeyLock {
     locks: Arc<DashMap<String, u64>>,
     pub timeout: Duration,
@@ -120,7 +120,7 @@ impl MultiKeyLock {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct KeyLock {
     map: Arc<DashMap<String, u64>>,
     pub key: String,
