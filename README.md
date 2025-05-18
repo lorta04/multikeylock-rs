@@ -31,6 +31,14 @@ While not built for production use yet this library may be useful for educationa
     
 -   `tokio-util` for CancellationToken
     
+## 📦 Installation
+
+To use this crate directly from GitHub, add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+multikeylock = { git = "https://github.com/lorta04/multikeylock-rs" }
+```
 
 ## 📦 Example Usage
 
@@ -39,9 +47,9 @@ use multikeylock::MultiKeyLock;
 
 #[tokio::main]
 async fn main() {
-    let lock_map = MultiKeyLock::new();
+    let multiKeyLock = MultiKeyLock::new();
 
-    if let Some(_guard) = lock_map.lock("user:123").await {
+    if let Some(_guard) = multiKeyLock.lock("user:123").await {
         // The key "user:123" is now locked
         // Do something exclusive here
     }
