@@ -1,4 +1,4 @@
-use multikeylock::multikeylock::{Config, MultiKeyLock};
+use multikeylock::{Config, MultiKeyLock};
 use std::time::Duration;
 use tokio::time::{sleep, Instant};
 use tokio_util::sync::CancellationToken;
